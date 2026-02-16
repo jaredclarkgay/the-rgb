@@ -34,12 +34,10 @@ export default function App() {
             throw new Error("API key not found. Set VITE_ANTHROPIC_API_KEY in .env");
           }
 
-          const res = await fetch("https://api.anthropic.com/v1/messages", {
+          const res = await fetch("/api/anthropic/v1/messages", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "x-api-key": apiKey,
-              "anthropic-version": "2023-06-01"
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               model: "claude-sonnet-4-20250514",
@@ -84,12 +82,10 @@ export default function App() {
         throw new Error("API key not found. Set VITE_ANTHROPIC_API_KEY in .env");
       }
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/anthropic/v1/messages", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
