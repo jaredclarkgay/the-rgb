@@ -2,10 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import RGBScene from "./components/RGBScene";
 import HUD from "./components/HUD";
 import ChatPanel from "./components/ChatPanel";
-import { NPCS } from "./systems/npcs";
+import AmbientTicker from "./components/AmbientTicker";
+import { NPCS, getNpcPrompt } from "./systems/npcs";
+import { useScenario } from "./systems/scenarioState.jsx";
 
 export default function App() {
   const containerRef = useRef(null);
+
+  // Scenario state
+  const { phase, tomasSpawned, beginScenario } = useScenario();
 
   // State
   const [activeNpc, setActiveNpc] = useState(null);
@@ -42,7 +47,7 @@ export default function App() {
             body: JSON.stringify({
               model: "claude-sonnet-4-20250514",
               max_tokens: 300,
-              system: NPCS[activeNpc].sys,
+              system: getNpcPrompt(activeNpc, phase),
               messages: init
             }),
           });
@@ -90,7 +95,7 @@ export default function App() {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 300,
-          system: NPCS[activeNpc].sys,
+          system: getNpcPrompt(activeNpc, phase),
           messages: histRef.current[activeNpc]
         }),
       });
@@ -129,8 +134,12 @@ export default function App() {
           containerRef={containerRef}
           onNPCClick={setActiveNpc}
           onNPCHover={setHovered}
+          onFirstInteraction={beginScenario}
+          scenarioPhase={phase}
+          tomasSpawned={tomasSpawned}
         />
         <HUD hovered={activeNpc ? null : hovered} />
+        <AmbientTicker isPaused={!!activeNpc} />
       </div>
 
       {/* Chat Panel */}

@@ -7,7 +7,7 @@ const BLDG_H = 15;
 const MOVE_SPD = 0.08;
 const LOOK_SPD = 0.004;
 
-export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
+export default function RGBScene({ containerRef, onNPCClick, onNPCHover, onFirstInteraction, scenarioPhase, tomasSpawned }) {
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
@@ -18,6 +18,7 @@ export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
   const dragRef = useRef({ active: false, startX: 0, startY: 0, moved: false });
   const raycaster = useRef(new THREE.Raycaster());
   const mouseVec = useRef(new THREE.Vector2());
+  const hasInteractedRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -161,7 +162,8 @@ export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
     }
 
     // ── NPCs ──
-    NPC_IDS.forEach(id => {
+    // Helper function to create an NPC group
+    const createNPCGroup = (id) => {
       const npc = NPCS[id];
       const [px, , pz] = npc.pos;
       const g = new THREE.Group();
@@ -207,7 +209,19 @@ export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
 
       scene.add(g);
       npcGroupsRef.current[id] = g;
+      return g;
+    };
+
+    // Create initial NPCs (excluding hidden ones)
+    NPC_IDS.forEach(id => {
+      const npc = NPCS[id];
+      if (!npc.hidden) {
+        createNPCGroup(id);
+      }
     });
+
+    // Store createNPCGroup for later use
+    window.__createNPCGroup = createNPCGroup;
 
     // ── Animation loop ──
     let raf;
@@ -311,7 +325,14 @@ export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
     el.addEventListener("mousemove", onMouseMoveHover);
 
     // Keyboard
-    const onKD = (e) => { keysRef.current[e.code] = true; };
+    const onKD = (e) => {
+      keysRef.current[e.code] = true;
+      // Trigger first interaction
+      if (!hasInteractedRef.current && onFirstInteraction) {
+        hasInteractedRef.current = true;
+        onFirstInteraction();
+      }
+    };
     const onKU = (e) => { keysRef.current[e.code] = false; };
     window.addEventListener("keydown", onKD);
     window.addEventListener("keyup", onKU);
@@ -328,7 +349,28 @@ export default function RGBScene({ containerRef, onNPCClick, onNPCHover }) {
       container.removeChild(renderer.domElement);
       renderer.dispose();
     };
-  }, [containerRef, onNPCClick, onNPCHover]);
+  }, [containerRef, onNPCClick, onNPCHover, onFirstInteraction]);
+
+  // Spawn Tomás when tomasSpawned becomes true
+  useEffect(() => {
+    if (tomasSpawned && !npcGroupsRef.current['tomas'] && window.__createNPCGroup) {
+      console.log('[RGBScene] Spawning Tomás');
+      window.__createNPCGroup('tomas');
+    }
+  }, [tomasSpawned]);
+
+  // Move Tomás to Margaux's table at Phase 4
+  useEffect(() => {
+    if (scenarioPhase === 4 && npcGroupsRef.current['tomas']) {
+      const tomasGroup = npcGroupsRef.current['tomas'];
+      const npc = NPCS['tomas'];
+      if (npc.movePos) {
+        console.log('[RGBScene] Moving Tomás to Margaux\'s table');
+        const [px, , pz] = npc.movePos;
+        tomasGroup.position.set(px, 0, pz);
+      }
+    }
+  }, [scenarioPhase]);
 
   return null;
 }
